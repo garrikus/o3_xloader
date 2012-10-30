@@ -44,6 +44,10 @@ ifeq ($(BOARD), omap3evm)
 OBJS 	+= k9f1g08r0a.o
 endif
 
+ifeq ($(BOARD), orion2)
+OBJS 	+= mt29f8g16.o
+endif
+
 ifeq ($(BOARD), am3517evm)
 OBJS    += k9f1g08r0a.o
 endif
