@@ -72,6 +72,7 @@ typedef enum {
 #else
 #define SDP_SDRC_MDCFG_0_DDR	(0x02584019|B_ALL)
 #define SDP_SDRC_MDCFG_0_DDR_XM	(0x03588019|B_ALL)
+#define SDP_SDRC_MDCFG_0_DDR_MICRON_XM  (0x03588019|B_ALL)
 #endif
 
 #define SDP_SDRC_MR_0_DDR		0x00000032
@@ -236,6 +237,33 @@ typedef enum {
 #define MICRON_XSR_165    23
 #define MICRON_V_ACTIMB_165 ((MICRON_TCKE_165 << 12) | (MICRON_XSR_165 << 0)) | \
 				(MICRON_TXP_165 << 8) | (MICRON_TWTR_165 << 16)
+
+
+/* Micron part (200MHz optimized) 5 ns
+ * MT46H64M32LF -- 16Meg x 32 x 4Banks
+ * Values calculated with
+ * http://processors.wiki.ti.com/images/9/9e/OMAP35x_DDR_register_calc_tool.zip
+ */
+#define MICRON_TDAL_200_H64M32   6
+#define MICRON_TDPL_200_H64M32   3
+#define MICRON_TRRD_200_H64M32   2
+#define MICRON_TRCD_200_H64M32   3
+#define MICRON_TRP_200_H64M32    3
+#define MICRON_TRAS_200_H64M32   8
+#define MICRON_TRC_200_H64M32   11
+#define MICRON_TRFC_200_H64M32  15
+#define MICRON_V_ACTIMA_200_H64M32 ((MICRON_TRFC_200_H64M32 << 27) | (MICRON_TRC_200_H64M32 << 22) | (MICRON_TRAS_200_H64M32 << 18) \
+		| (MICRON_TRP_200_H64M32 << 15) | (MICRON_TRCD_200_H64M32 << 12) |(MICRON_TRRD_200_H64M32 << 9) | \
+		(MICRON_TDPL_200_H64M32 << 6) | (MICRON_TDAL_200_H64M32))
+
+#define MICRON_TWTR_200_H64M32   2
+#define MICRON_TCKE_200_H64M32   1
+#define MICRON_TXP_200_H64M32    2
+#define MICRON_XSR_200_H64M32   23
+#define MICRON_V_ACTIMB_200_H64M32 ((MICRON_TCKE_200_H64M32 << 12) | (MICRON_XSR_200_H64M32 << 0)) | \
+				(MICRON_TXP_200_H64M32 << 8) | (MICRON_TWTR_200_H64M32 << 16)
+
+#define SDRC_RFR_CTRL_200_H64M32   0x000bfe01 /* 15.6us/5ns - 50=0xbfe */
 
 
 /* Hynix part of AM/DM37xEVM (200MHz optimized)
