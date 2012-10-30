@@ -299,4 +299,26 @@
 #define I2C_BASE2		(OMAP34XX_CORE_L4_IO_BASE + 0x72000)
 #define I2C_BASE3		(OMAP34XX_CORE_L4_IO_BASE + 0x60000)
 
+/* GPIO */
+#define GPIO_MASK_IN_BANK(g)                (0x00000001<<((g)%32))
+#define GPIO_OE_OFFS                        (0x034)
+#define GPIO_DATAOUT_OFFS                   (0x03c)
+#define GPIO_BANK_BASE(g)                   ((g)/32 == 0 ? 0x48310000 : 0x49050000 + ((g)/32 - 1)*0x2000)
+#define GPIO_OE_ADDR(g)                     (((g)/32 == 0 ? 0x48310000 : 0x49050000 + ((g)/32 - 1)*0x2000) + GPIO_OE_OFFS)
+#define GPIO_DATAOUT_ADDR(g)                (((g)/32 == 0 ? 0x48310000 : 0x49050000 + ((g)/32 - 1)*0x2000) + GPIO_DATAOUT_OFFS)
+
+/* GPTIMERS */
+#define GPT8_BASE     0x4903e000
+#define GPT9_BASE     0x49040000
+
+#define GPT8_TCLR     (GPT8_BASE + 0x024)
+#define GPT8_TCRR     (GPT8_BASE + 0x028)
+#define GPT8_TLDR     (GPT8_BASE + 0x02c)
+#define GPT8_TMAR     (GPT8_BASE + 0x038)
+
+#define GPT9_TCLR     (GPT9_BASE + 0x024)
+#define GPT9_TCRR     (GPT9_BASE + 0x028)
+#define GPT9_TLDR     (GPT9_BASE + 0x02c)
+#define GPT9_TMAR     (GPT9_BASE + 0x038)
+
 #endif
