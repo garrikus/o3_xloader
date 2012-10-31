@@ -43,6 +43,7 @@
 //#define CONFIG_3430_AS_3410	 1    /* true for 3430 in 3410 mode */
 
 #define CONFIG_OMAP3EVM          1    /* working with EVM */
+#define CONFIG_O2_BOARD          1    /* working with O2-board */
 
 /* Enable the below macro if MMC boot support is required */
 #define CONFIG_MMC	1
