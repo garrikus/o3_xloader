@@ -1249,7 +1249,7 @@ void per_clocks_enable(void)
 	sr32(CM_FCLKEN_PER, 3, 1, 0x1); /* FCKen GPT2 */
 
 #ifdef CFG_NS16550
-	/* UART 3 Clocks */ /* Came from beagle */
+	/* UART 3 Clocks */
 	sr32(CM_ICLKEN_PER, 11, 1, 0x1);
 	sr32(CM_FCLKEN_PER, 11, 1, 0x1);
 
@@ -1259,6 +1259,11 @@ void per_clocks_enable(void)
 	/* Turn on all 3 I2C clocks */ /* Came from beagle */
 	sr32(CM_FCLKEN1_CORE, 15, 3, 0x7);
 	sr32(CM_ICLKEN1_CORE, 15, 3, 0x7);	/* I2C1,2,3 = on */
+#endif
+
+#ifdef CONFIG_MMC
+	sr32(CM_ICLKEN1_CORE, 24, 1, 0x1);
+	sr32(CM_FCLKEN1_CORE, 24, 1, 0x1);
 #endif
 	delay(1000);
 }
