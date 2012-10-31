@@ -79,10 +79,14 @@ SUBDIRS	=
 #########################################################################
 #########################################################################
 
-ALL = x-load.bin System.map
+ALL = x-load.bin x-load.bin.ift System.map
 
-all:		$(ALL)
+all ift:		$(ALL)
 
+
+x-load.bin.ift: signGP System.map x-load.bin
+	./signGP x-load.bin $(TEXT_BASE) $(CONFIG_HEADER)
+	cp x-load.bin.ift MLO
 
 x-load.bin:	x-load
 		$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
@@ -105,6 +109,8 @@ System.map:	x-load
 oneboot:	x-load.bin
 		scripts/mkoneboot.sh
 
+signGP:	scripts/signGP.c
+		$(HOSTCC) $(HOSTCFLAGS) -o signGP  $<
 #########################################################################
 else
 all install x-load x-load.srec oneboot depend dep:
@@ -176,7 +182,7 @@ clobber:	clean
 		| xargs rm -f
 	rm -f $(OBJS) *.bak tags TAGS
 	rm -fr *.*~
-	rm -f x-load x-load.map $(ALL)
+	rm -f x-load x-load.map x-load.bin.ift signGP MLO $(ALL)
 	rm -f include/asm/proc include/asm/arch
 
 mrproper \
