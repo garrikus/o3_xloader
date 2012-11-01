@@ -1932,3 +1932,17 @@ int mmc_boot(unsigned char *buf)
 /* optionally do something like blinking LED */
 void board_hang (void)
 { while (0) {};}
+
+/******************************************************************************
+ * Dummy function to handle errors for EABI incompatibility
+ *****************************************************************************/
+void raise(void)
+{
+}
+
+/******************************************************************************
+ * Dummy function to handle errors for EABI incompatibility
+ *****************************************************************************/
+void abort(void)
+{
+}
