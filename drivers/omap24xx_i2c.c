@@ -36,9 +36,73 @@ static void wait_for_bb (void);
 static u16 wait_for_pin (void);
 static void flush_fifo(void);
 
+extern void udelay(unsigned long);
+
 void i2c_init (int speed, int slaveadd)
 {
-	u16 scl;
+	int psc, fsscll, fssclh;
+	int hsscll = 0, hssclh = 0;
+	u32 scll, sclh;
+
+	/* Only handle standard, fast and high speeds */
+	if ((speed != OMAP_I2C_STANDARD) &&
+	    (speed != OMAP_I2C_FAST_MODE) &&
+	    (speed != OMAP_I2C_HIGH_SPEED)) {
+		printf("Error : I2C unsupported speed %d\n", speed);
+		return;
+	}
+
+	psc = I2C_IP_CLK / I2C_INTERNAL_SAMPLING_CLK;
+	psc -= 1;
+	if (psc < I2C_PSC_MIN) {
+		printf("Error : I2C unsupported prescalar %d\n", psc);
+		return;
+	}
+
+	if (speed == OMAP_I2C_HIGH_SPEED) {
+		/* High speed */
+
+		/* For first phase of HS mode */
+		fsscll = fssclh = I2C_INTERNAL_SAMPLING_CLK /
+			(2 * OMAP_I2C_FAST_MODE);
+
+		fsscll -= I2C_HIGHSPEED_PHASE_ONE_SCLL_TRIM;
+		fssclh -= I2C_HIGHSPEED_PHASE_ONE_SCLH_TRIM;
+		if (((fsscll < 0) || (fssclh < 0)) ||
+		    ((fsscll > 255) || (fssclh > 255))) {
+			printf("Error : I2C initializing first phase clock\n");
+			return;
+		}
+
+		/* For second phase of HS mode */
+		hsscll = hssclh = I2C_INTERNAL_SAMPLING_CLK / (2 * speed);
+
+		hsscll -= I2C_HIGHSPEED_PHASE_TWO_SCLL_TRIM;
+		hssclh -= I2C_HIGHSPEED_PHASE_TWO_SCLH_TRIM;
+		if (((fsscll < 0) || (fssclh < 0)) ||
+		    ((fsscll > 255) || (fssclh > 255))) {
+			printf("Error : I2C initializing second phase clock\n");
+			return;
+		}
+
+		scll = (unsigned int)hsscll << 8 | (unsigned int)fsscll;
+		sclh = (unsigned int)hssclh << 8 | (unsigned int)fssclh;
+
+	} else {
+		/* Standard and fast speed */
+		fsscll = fssclh = I2C_INTERNAL_SAMPLING_CLK / (2 * speed);
+
+		fsscll -= I2C_FASTSPEED_SCLL_TRIM;
+		fssclh -= I2C_FASTSPEED_SCLH_TRIM;
+		if (((fsscll < 0) || (fssclh < 0)) ||
+		    ((fsscll > 255) || (fssclh > 255))) {
+			printf("Error : I2C initializing clock\n");
+			return;
+		}
+
+		scll = (unsigned int)fsscll;
+		sclh = (unsigned int)fssclh;
+	}
 
 	outw(0x2, I2C_SYSC); /* for ES2 after soft reset */
 	udelay(1000);
@@ -49,19 +113,17 @@ void i2c_init (int speed, int slaveadd)
 		udelay (50000);
 	}
 
-	/* 12Mhz I2C module clock */
-	outw (0, I2C_PSC);
-	speed = speed/1000;		    /* 100 or 400 */
-	scl = ((12000/(speed*2)) - 7);	/* use 7 when PSC = 0 */
-	outw (scl, I2C_SCLL);
-	outw (scl, I2C_SCLH);
+	outw(psc, I2C_PSC);
+	outw(scll, I2C_SCLL);
+	outw(sclh, I2C_SCLH);
+
 	/* own address */
 	outw (slaveadd, I2C_OA);
 	outw (I2C_CON_EN, I2C_CON);
 
 	/* have to enable intrrupts or OMAP i2c module doesn't work */
 	outw (I2C_IE_XRDY_IE | I2C_IE_RRDY_IE | I2C_IE_ARDY_IE |
-	      I2C_IE_NACK_IE | I2C_IE_AL_IE, I2C_IE);
+		I2C_IE_NACK_IE | I2C_IE_AL_IE, I2C_IE);
 	udelay (1000);
 	flush_fifo();
 	outw (0xFFFF, I2C_STAT);
@@ -87,7 +149,7 @@ static int i2c_read_byte (u8 devaddr, u8 regoffset, u8 * value)
 
 	if (status & I2C_STAT_XRDY) {
 		/* Important: have to use byte access */
-		*(volatile u8 *) (I2C_DATA) = regoffset;
+		outb(regoffset, I2C_DATA);
 		udelay (20000);
 		if (inw (I2C_STAT) & I2C_STAT_NACK) {
 			i2c_error = 1;
@@ -112,14 +174,14 @@ static int i2c_read_byte (u8 devaddr, u8 regoffset, u8 * value)
 		outw (1, I2C_CNT);
 		/* need stop bit here */
 		outw (I2C_CON_EN | I2C_CON_MST | I2C_CON_STT | I2C_CON_STP,
-		      I2C_CON);
+			I2C_CON);
 
 		status = wait_for_pin ();
 		if (status & I2C_STAT_RRDY) {
 #if defined(CONFIG_OMAP243X) || defined(CONFIG_OMAP34XX)
-                        *value = inb(I2C_DATA);
+			*value = inb(I2C_DATA);
 #else
-                        *value = inw(I2C_DATA);
+			*value = inw(I2C_DATA);
 #endif
 			udelay (20000);
 		} else {
@@ -155,29 +217,29 @@ static int i2c_write_byte (u8 devaddr, u8 regoffset, u8 value)
 	outw (devaddr, I2C_SA);
 	/* stop bit needed here */
 	outw (I2C_CON_EN | I2C_CON_MST | I2C_CON_STT | I2C_CON_TRX |
-	      I2C_CON_STP, I2C_CON);
+		I2C_CON_STP, I2C_CON);
 
 	/* wait until state change */
 	status = wait_for_pin ();
 
 	if (status & I2C_STAT_XRDY) {
 #if defined(CONFIG_OMAP243X) || defined(CONFIG_OMAP34XX)
-                /* send out 1 byte */
-                outb(regoffset, I2C_DATA);
-                outw(I2C_STAT_XRDY, I2C_STAT);
-                status = wait_for_pin();
-                if ((status & I2C_STAT_XRDY)) {
-                        /* send out next 1 byte */
-                        outb(value, I2C_DATA);
-                        outw(I2C_STAT_XRDY, I2C_STAT);
-                } else {
-                        i2c_error = 1;
-                }
-#else
-                /* send out two bytes */
-                outw ((value << 8) + regoffset, I2C_DATA);
-#endif
+        /* send out 1 byte */
+        outb(regoffset, I2C_DATA);
+        outw(I2C_STAT_XRDY, I2C_STAT);
 
+        status = wait_for_pin();
+        if ((status & I2C_STAT_XRDY)) {
+            /* send out next 1 byte */
+            outb(value, I2C_DATA);
+            outw(I2C_STAT_XRDY, I2C_STAT);
+        } else {
+            i2c_error = 1;
+		}
+#else
+		/* send out two bytes */
+		outw ((value << 8) + regoffset, I2C_DATA);
+#endif
 		/* must have enough delay to allow BB bit to go low */
 		udelay (50000);
 		if (inw (I2C_STAT) & I2C_STAT_NACK) {
@@ -215,9 +277,9 @@ static void flush_fifo(void)
 		stat = inw(I2C_STAT);
 		if(stat == I2C_STAT_RRDY){
 #if defined(CONFIG_OMAP243X) || defined(CONFIG_OMAP34XX)
-                        inb(I2C_DATA);
+			inb(I2C_DATA);
 #else
-                        inw(I2C_DATA);
+			inw(I2C_DATA);
 #endif
 			outw(I2C_STAT_RRDY,I2C_STAT);
 			udelay(1000);
