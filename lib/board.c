@@ -62,6 +62,16 @@ int mem_init(void)
 	return 0;
 }
 
+#ifdef CONFIG_MMC
+#ifdef CONFIG_DRIVER_OMAP34XX_I2C
+static int init_func_i2c (void)
+{
+	i2c_init (CFG_I2C_SPEED, CFG_I2C_SLAVE);
+	return 0;
+}
+#endif
+#endif
+
 typedef int (init_fnc_t) (void);
 
 init_fnc_t *init_sequence[] = {
@@ -73,6 +83,11 @@ init_fnc_t *init_sequence[] = {
 #endif
 	nand_init,		/* board specific nand init */
 	mem_init,		/* board specific memory init */
+#ifdef CONFIG_MMC
+#ifdef CONFIG_DRIVER_OMAP34XX_I2C
+	init_func_i2c,
+#endif
+#endif
   	NULL,
 };
 
