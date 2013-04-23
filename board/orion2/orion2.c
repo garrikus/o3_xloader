@@ -612,10 +612,11 @@ u32 wait_on_value(u32 read_bit_mask, u32 match_value, u32 read_addr, u32 bound)
  *********************************************************************/
 void sdrc_init(void)
 {
+    volatile unsigned int reg;
+
 	/* reset sdrc controller */
 	__raw_writel(SOFTRESET, SDRC_SYSCONFIG);
 	wait_on_value(BIT0, BIT0, SDRC_STATUS, 12000000);
-	__raw_writel(0, SDRC_SYSCONFIG);
 
 	/* setup sdrc to ball mux */
 	__raw_writel(SDP_SDRC_SHARING, SDRC_SHARING);
@@ -627,21 +628,37 @@ void sdrc_init(void)
 	__raw_writel(SDRC_RFR_CTRL_200_H64M32, SDRC_RFR_CTRL_0);
 
 	__raw_writel(SDP_SDRC_POWER_POP, SDRC_POWER);
-
-	/* init sequence for mDDR/mSDR using manual commands (DDR is different) */
-	__raw_writel(CMD_NOP, SDRC_MANUAL_0);
-	delay(5000);
-	__raw_writel(CMD_PRECHARGE, SDRC_MANUAL_0);
-	__raw_writel(CMD_AUTOREFRESH, SDRC_MANUAL_0);
-	__raw_writel(CMD_AUTOREFRESH, SDRC_MANUAL_0);
-
-	/* set mr0 */
-	__raw_writel(SDP_SDRC_MR_0_DDR, SDRC_MR_0);
+	delay(120000);
 
 	/* set up dll */
 	__raw_writel(SDP_SDRC_DLLAB_CTRL, SDRC_DLLA_CTRL);
-	delay(0x2000);	/* give time to lock */
+    do {
+        reg = __raw_readl(SDRC_DLLA_STATUS);
+    } while(reg == 0);
 
+	/* init sequence for mDDR/mSDR using manual commands (DDR is different) */
+	__raw_writel(CMD_NOP, SDRC_MANUAL_0);
+	delay(120000);
+
+	__raw_writel(CMD_PRECHARGE, SDRC_MANUAL_0);
+	__raw_writel(CMD_NOP, SDRC_MANUAL_0);
+	delay(50);
+
+	__raw_writel(CMD_AUTOREFRESH, SDRC_MANUAL_0);
+	__raw_writel(CMD_NOP, SDRC_MANUAL_0);
+	delay(60);
+	__raw_writel(CMD_AUTOREFRESH, SDRC_MANUAL_0);
+	__raw_writel(CMD_NOP, SDRC_MANUAL_0);
+	delay(60);
+
+	/* set mr0 */
+	__raw_writel(SDP_SDRC_MR_0_DDR, SDRC_MR_0);
+	__raw_writel(CMD_NOP, SDRC_MANUAL_0);
+	delay(60);
+	/* set emr0 -- Use 1/2 driver strength */
+	__raw_writel(SDP_SDRC_EMR2_0_DDR, SDRC_EMR2_0);
+	__raw_writel(CMD_NOP, SDRC_MANUAL_0);
+	delay(60);
 }
 #endif /* CFG_OMAPEVM_DDR */
 

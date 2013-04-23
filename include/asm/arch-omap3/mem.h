@@ -76,6 +76,7 @@ typedef enum {
 #endif
 
 #define SDP_SDRC_MR_0_DDR		0x00000032
+#define SDP_SDRC_EMR2_0_DDR		0x00000020
 
 /* Diabling power down mode using CKE pin */
 #define SDP_SDRC_POWER_POP      0x00000081
@@ -91,7 +92,7 @@ typedef enum {
 #define DLL_ENADLL              1
 #define DLL_LOCKDLL             0
 #define DLL_DLLPHASE_72         0
-#define DLL_DLLPHASE_90         1
+#define DLL_DLLPHASE_90         0
 
 // rkw - need to find of 90/72 degree recommendation for speed like before.
 #define SDP_SDRC_DLLAB_CTRL ((DLL_ENADLL << 3) | \
@@ -263,7 +264,7 @@ typedef enum {
 #define MICRON_V_ACTIMB_200_H64M32 ((MICRON_TCKE_200_H64M32 << 12) | (MICRON_XSR_200_H64M32 << 0)) | \
 				(MICRON_TXP_200_H64M32 << 8) | (MICRON_TWTR_200_H64M32 << 16)
 
-#define SDRC_RFR_CTRL_200_H64M32   0x000bfe01 /* 15.6us/5ns - 50=0xbfe */
+#define SDRC_RFR_CTRL_200_H64M32   0x0005e601 /* 7.8us/5ns - 50=0x5e6 */
 
 
 /* Hynix part of AM/DM37xEVM (200MHz optimized)
