@@ -28,6 +28,8 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
+#define CFG_BTD_INDEX "-01"
+
 /* serial printf facility takes about 3.5K */
 #define CFG_PRINTF
 //#undef CFG_PRINTF
