@@ -69,10 +69,120 @@ int mem_init(void)
 
 #ifdef CONFIG_MMC
 #ifdef CONFIG_DRIVER_OMAP34XX_I2C
-static int init_func_i2c (void)
+static int init_func_i2c(void)
 {
-	i2c_init (CFG_I2C_SPEED, CFG_I2C_SLAVE);
+	i2c_init(CFG_I2C_SPEED, CFG_I2C_SLAVE);
 	return 0;
+}
+
+#define TWL4030_CHIP_PM_MASTER				0x4b
+#define TWL4030_PM_MASTER_P1_SW_EVENTS			0x46
+
+static inline void shutdown(void)
+{
+    int i;
+    u8 value = 0x01;
+
+    i2c_set_bus_num(0);
+
+    for(i = 0; i < 3; i++)
+	i2c_write(TWL4030_CHIP_PM_MASTER, TWL4030_PM_MASTER_P1_SW_EVENTS + i, 1, &value, 1);
+}
+
+#define I2C_FUEL_GAUGE					0x55
+#define I2C_CHARGER					0x09
+
+static int chk_accum_voltage(void)
+{
+//	unsigned int bus = i2c_get_bus_num();
+	int error = 1;
+/*
+	if(bus != 2 &&
+	   i2c_set_bus_num(2) < 0) {
+			udelay(1000);
+
+			if(i2c_set_bus_num(2) < 0) {
+				printf("ERROR: Access to I2C bus num 2 is failed!\n");
+			}
+	}
+
+	if(i2c_get_bus_num() == 2)*/ {
+	i2c_set_bus_num(2);
+		if(!i2c_probe(I2C_FUEL_GAUGE)) {
+			uchar volt1 = 0, volt2 = 0;
+	                volatile u16   voltage = 0;
+	                int   i, j, t = 0xfffff;
+			const int count_try = 5;
+
+			for(j = 0; j < count_try; j++) {
+				for(i = 0; i < 3; i++) {
+					if(!(error = smb_read(I2C_FUEL_GAUGE, 0x09, &volt1))) {
+						voltage = (u16)(volt1 & 0xff);
+		                        	voltage <<= 8;
+		                        	break;
+					} else
+						udelay(10000 + i * 10000);
+				}
+
+				for(i = 0; i < 3; i++) {
+					if(!(error = smb_read(I2C_FUEL_GAUGE, 0x08, &volt2))) {
+						voltage |= (u16)(volt2 & 0xff);
+		                        	break;
+					} else
+						udelay(10000 + i * 10000);
+				}
+
+				if(voltage < 300 || voltage > 5000) {
+					t = 0xfffff;
+					while(t--) udelay(100);
+				}
+				else
+					break;
+			}
+
+			printf("VOLTAGE ACCUM IS %d.%d V\n", (voltage & 0xffff)/1000, (voltage & 0xffff)%1000);
+
+			if(voltage <= 3200) {
+				if(voltage < 300) {
+					printf("Too low accumulator voltage!\nUnable to boot...\n");
+					goto shutdown;
+				}
+
+				if(!i2c_probe(I2C_CHARGER)) {
+					for(i = 0; i < 3; i++) {
+						if(!(error = smb_read(I2C_CHARGER, 0x04, &volt1)))
+			                                                                 	   break;
+		                                else
+							udelay(1000 + i * 10000);
+					}
+
+					if(!error && (volt1 & 0x80) && (volt1 & 0x40)) {
+						smb_write(I2C_CHARGER, 0x02, 0xff);
+						smb_write(I2C_CHARGER, 0x01, 0xaf);
+						smb_write(I2C_CHARGER, 0x00, 0x61);
+					} else {
+							printf("Need charging!\n");
+							goto shutdown;
+									}
+				} else {
+						printf("ERROR: i2c test charge controller is failed!\n");
+						error = 1;
+								}
+			} else
+				error = 0;
+		} else {
+				printf("ERROR: i2c test fuel gauge is failed!\n");
+				error = 1;
+		}
+	}
+
+	i2c_set_bus_num(0);
+
+        return error;
+
+shutdown:
+	printf("SHUTDOWN!");
+        shutdown();
 }
 #endif
 #endif
@@ -86,6 +196,7 @@ init_fnc_t *init_sequence[] = {
  	serial_init,		/* serial communications setup */
 	print_info,
 #endif
+	chk_accum_voltage,
 	nand_init,		/* board specific nand init */
 	mem_init,		/* board specific memory init */
 #ifdef CONFIG_MMC
