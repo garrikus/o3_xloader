@@ -140,7 +140,7 @@ static int chk_accum_voltage(void)
 					break;
 			}
 
-			printf("VOLTAGE ACCUM IS %d.%d V\n", (voltage & 0xffff)/1000, (voltage & 0xffff)%1000);
+			printf("VOLTAGE ACCUM IS %d.%03d V\n", (voltage & 0xffff)/1000, (voltage & 0xffff)%1000);
 
 			if(voltage <= 3200) {
 				if(voltage < 300) {
