@@ -133,6 +133,7 @@ static int chk_accum_voltage(void)
 				}
 
 				if(voltage < 300 || voltage > 5000) {
+					if(!j) printf("Wait a few seconds for battery voltage measurement...\n");
 					t = 0xfffff;
 					while(t--) udelay(100);
 				}
@@ -140,7 +141,7 @@ static int chk_accum_voltage(void)
 					break;
 			}
 
-			printf("VOLTAGE ACCUM IS %d.%03d V\n", (voltage & 0xffff)/1000, (voltage & 0xffff)%1000);
+			printf("ACCUM BATTERY VOLTAGE: %d.%03d V\n", voltage/1000, voltage%1000);
 
 			if(voltage <= 3200) {
 				if(voltage < 300) {
@@ -171,14 +172,14 @@ static int chk_accum_voltage(void)
 			} else
 				error = 0;
 		} else {
-				printf("ERROR: i2c test fuel gauge is failed!\n");
+				printf("WARNING: fuel gauge is not found!\n");
 				error = 1;
 		}
 	}
 
 	i2c_set_bus_num(0);
 
-        return error;
+        return 0;//error;
 
 shutdown:
 	printf("SHUTDOWN!");
