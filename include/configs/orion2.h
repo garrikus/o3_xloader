@@ -48,16 +48,17 @@
 #define CONFIG_O2_BOARD          1    /* working with O2-board */
 
 /* Enable the below macro if MMC boot support is required */
-#define CONFIG_MMC	1
+/*#define CONFIG_MMC	1*/
 #if defined(CONFIG_MMC)
 	#define CFG_CMD_MMC	1
 	#define CFG_CMD_FAT	1
-	#define CFG_I2C_SPEED		100000
-	#define CFG_I2C_SLAVE		1
-	#define CFG_I2C_BUS		0
-	#define CFG_I2C_BUS_SELECT	1
-	#define CONFIG_DRIVER_OMAP34XX_I2C 1
 #endif
+
+#define CFG_I2C_SPEED		100000
+#define CFG_I2C_SLAVE		1
+#define CFG_I2C_BUS		0
+#define CFG_I2C_BUS_SELECT	1
+#define CONFIG_DRIVER_OMAP34XX_I2C 1
 
 #include <asm/arch/cpu.h>        /* get chip and board defs */
 
