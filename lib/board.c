@@ -93,65 +93,60 @@ static inline void shutdown(void)
 
 static int chk_accum_voltage(void)
 {
-//	unsigned int bus = i2c_get_bus_num();
-	int error = 1;
-/*
-	if(bus != 2 &&
-	   i2c_set_bus_num(2) < 0) {
-			udelay(1000);
+    int error = 1;
 
-			if(i2c_set_bus_num(2) < 0) {
-				printf("ERROR: Access to I2C bus num 2 is failed!\n");
-			}
-	}
+    i2c_set_bus_num(2);
 
-	if(i2c_get_bus_num() == 2)*/ {
-	i2c_set_bus_num(2);
-		if(!i2c_probe(I2C_FUEL_GAUGE)) {
-			uchar volt1 = 0, volt2 = 0;
-	                volatile u16   voltage = 0;
-	                int   i, j, t = 0xfffff;
-			const int count_try = 5;
+    if(!i2c_probe(I2C_FUEL_GAUGE)) {
+		uchar volt1 = 0, volt2 = 0;
+	        u16   voltage = 0;
+	        int   i, j, t = 20000;
+		const int count_try = 50;
 
-			for(j = 0; j < count_try; j++) {
-				for(i = 0; i < 3; i++) {
-					if(!(error = smb_read(I2C_FUEL_GAUGE, 0x09, &volt1))) {
+		for(j = 0; j < count_try; j++) {
+			for(i = 0; i < 3; i++) {
+				if(!(error = smb_read(I2C_FUEL_GAUGE, 0x09, &volt1))) {
 						voltage = (u16)(volt1 & 0xff);
 		                        	voltage <<= 8;
 		                        	break;
-					} else
-						udelay(10000 + i * 10000);
+				} else
+						udelay(10000 + i*10000);
 				}
-
+				
 				for(i = 0; i < 3; i++) {
 					if(!(error = smb_read(I2C_FUEL_GAUGE, 0x08, &volt2))) {
 						voltage |= (u16)(volt2 & 0xff);
 		                        	break;
 					} else
-						udelay(10000 + i * 10000);
+						udelay(10000 + i*10000);
 				}
 
 				if(voltage < 300 || voltage > 5000) {
-					t = 0xfffff;
-					while(t--) udelay(100);
+					if(!j)
+						printf("\nWait a few seconds for battery voltage measurement...\n");
+
+					if(j == 1) t = 150000;
+					else	   t = 2000;
+
+					while(t--) udelay(1000);
 				}
 				else
 					break;
+		}
+
+		printf("ACCUM BATTERY VOLTAGE: %d.%03d V\n", voltage/1000, voltage%1000);
+
+		if(voltage <= 3200) {
+			if(voltage < 300) {
+				printf("Too low accumulator voltage!\nUnable to boot...\n");
+				goto shutdown;
 			}
 
-			printf("VOLTAGE ACCUM IS %d.%03d V\n", (voltage & 0xffff)/1000, (voltage & 0xffff)%1000);
-
-			if(voltage <= 3200) {
-				if(voltage < 300) {
-					printf("Too low accumulator voltage!\nUnable to boot...\n");
-					goto shutdown;
-				}
-
-				if(!i2c_probe(I2C_CHARGER)) {
-					for(i = 0; i < 3; i++) {
-						if(!(error = smb_read(I2C_CHARGER, 0x04, &volt1)))
-			                                                                 	   break;
-		                                else
+			if(!i2c_probe(I2C_CHARGER)) {
+				for(i = 0; i < 3; i++) {
+					if(!(error = smb_read(I2C_CHARGER, 0x04, &volt1)))
+			                		break;
+		                        else
 							udelay(1000 + i * 10000);
 					}
 
@@ -162,18 +157,18 @@ static int chk_accum_voltage(void)
 					} else {
 							printf("Need charging!\n");
 							goto shutdown;
-									}
-				} else {
-						printf("ERROR: i2c test charge controller is failed!\n");
-						error = 1;
-								}
+						}
+			} else {
+				printf("ERROR: i2c test charge controller is failed!\n");
+				error = 1;
+				}
 			} else
 				error = 0;
 		} else {
-				printf("ERROR: i2c test fuel gauge is failed!\n");
-				error = 1;
+				printf("WARNING: fuel gauge is not found!\n");
+				error = 0;
 		}
-	}
+	
 
 	i2c_set_bus_num(0);
 
