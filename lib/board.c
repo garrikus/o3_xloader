@@ -88,8 +88,46 @@ static inline void shutdown(void)
 	i2c_write(TWL4030_CHIP_PM_MASTER, TWL4030_PM_MASTER_P1_SW_EVENTS + i, 1, &value, 1);
 }
 
+#define TWL4030_CHIP_PM_RECEIVER                        0x4b
+#define TWL4030_PM_RECEIVER_VMMC1_DEV_GRP               0x82
+#define TWL4030_PM_RECEIVER_VMMC1_DEDICATED             0x85
+#define TWL4030_PM_RECEIVER_DEV_GRP_P1                  0x20
+#define TWL4030_PM_RECEIVER_VMMC1_VSEL_30               0x02
+
+static int mmc_is_powered(void)
+{
+    i2c_set_bus_num(0);
+
+    int i;
+    unsigned char val1, val2;
+
+    for(i = 0; i < 3; i++)
+    {
+        if(!(i2c_read(TWL4030_CHIP_PM_RECEIVER, TWL4030_PM_RECEIVER_VMMC1_DEV_GRP, 1, &val1, 1)))
+                                                                        break;
+        else udelay (1000 + i * 10000);
+    }
+
+    for(i = 0; i < 3; i++)
+    {
+        if(!(i2c_read(TWL4030_CHIP_PM_RECEIVER, TWL4030_PM_RECEIVER_VMMC1_DEDICATED, 1, &val2, 1)))
+                                                                        break;
+        else udelay (1000 + i * 10000);
+    }
+
+    if(!((val1 & TWL4030_PM_RECEIVER_DEV_GRP_P1) &&
+            val2 == TWL4030_PM_RECEIVER_VMMC1_VSEL_30)) {
+//                                                    printf("No VMMC1 active.\n");
+						return 0;
+    } else
+						return 1;
+//                                                    printf("Active VMMC1 found.\n");
+}
+
+
 #define I2C_FUEL_GAUGE					0x55
 #define I2C_CHARGER					0x09
+
 
 static int chk_accum_voltage(void)
 {
@@ -168,7 +206,6 @@ static int chk_accum_voltage(void)
 				printf("WARNING: fuel gauge is not found!\n");
 				error = 0;
 		}
-	
 
 	i2c_set_bus_num(0);
 
@@ -219,6 +256,8 @@ void start_armboot (void)
 #if (!defined(CONFIG_OMAP3_BEAGLE) && !defined(CONFIG_O2_BOARD))
 	if ((get_mem_type() == MMC_ONENAND) || (get_mem_type() == MMC_NAND))
 #endif	/* CONFIG_OMAP3_BEAGLE */
+
+	if(mmc_is_powered())
 		buf += mmc_boot(buf);
 
 	if (buf == (uchar *)CFG_LOADADDR) {
