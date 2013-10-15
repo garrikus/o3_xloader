@@ -109,12 +109,16 @@ static int mmc_is_powered(void)
         else udelay (1000 + i * 10000);
     }
 
+    if(i == 3) return 0;
+
     for(i = 0; i < 3; i++)
     {
         if(!(i2c_read(TWL4030_CHIP_PM_RECEIVER, TWL4030_PM_RECEIVER_VMMC1_DEDICATED, 1, &val2, 1)))
                                                                         break;
         else udelay (1000 + i * 10000);
     }
+
+    if(i == 3) return 0;
 
     if(!((val1 & TWL4030_PM_RECEIVER_DEV_GRP_P1) &&
             val2 == TWL4030_PM_RECEIVER_VMMC1_VSEL_30)) {
