@@ -67,6 +67,7 @@ int mem_init(void)
 	return 0;
 }
 
+#ifdef CONFIG_MMC
 #ifdef CONFIG_DRIVER_OMAP34XX_I2C
 static int init_func_i2c(void)
 {
@@ -219,6 +220,7 @@ shutdown:
 	printf("SHUTDOWN!");
         shutdown();
 }
+#endif
 #endif
 
 typedef int (init_fnc_t) (void);
