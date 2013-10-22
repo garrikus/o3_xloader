@@ -108,12 +108,16 @@ static int mmc_is_powered(void)
         else udelay (1000 + i * 10000);
     }
 
+    if(i == 3) return -1;
+
     for(i = 0; i < 3; i++)
     {
         if(!(i2c_read(TWL4030_CHIP_PM_RECEIVER, TWL4030_PM_RECEIVER_VMMC1_DEDICATED, 1, &val2, 1)))
                                                                         break;
         else udelay (1000 + i * 10000);
     }
+
+    if(i == 3) return -1;
 
     if(!((val1 & TWL4030_PM_RECEIVER_DEV_GRP_P1) &&
             val2 == TWL4030_PM_RECEIVER_VMMC1_VSEL_30)) {
@@ -257,26 +261,44 @@ void start_armboot (void)
 	if ((get_mem_type() == MMC_ONENAND) || (get_mem_type() == MMC_NAND))
 #endif	/* CONFIG_OMAP3_BEAGLE */
 
-	if(mmc_is_powered())
-		buf += mmc_boot(buf);
+	/* XXX: Here we check mmc power (we read the registers of TPS65951).
+	 * If mmc power is set, then we boot from mmc and we need to write 
+	 * 0xafafafaf to SRAM (address = 0x4020eff0). If mmc power is not
+	 * set, therefore we start from NAND and we need to write NAND mark
+	 * 0x5f5f5f5f. If TPS65951 don't answer, we believe it is I2C error
+	 * and write 0xf0f0f0f0.
+	 */
 
-	if (buf == (uchar *)CFG_LOADADDR) {
-		if (get_mem_type() == GPMC_NAND){
+	unsigned int  word = 0;
+	unsigned int* addr = (unsigned int*)(0x4020eff0);
+	int mmc_power_state = mmc_is_powered();
+
+	if(mmc_power_state == 1) {
+		buf += mmc_boot(buf);
+		word = 0xafafafaf;		// MMC mark
+	} else if(mmc_power_state == 0)
+		word = 0x5f5f5f5f;		// NAND mark
+	else
+		word = 0xf0f0f0f0;		// I2C error mark
+
+	for(i = 0; i < 4; i++, addr++)
+		*((unsigned int *)addr) = (unsigned int)word;
+
+	if(buf == (uchar *)CFG_LOADADDR) {
+		if(get_mem_type() == GPMC_NAND) {
 #ifdef CFG_PRINTF
 			printf("Booting from nand . . .\n");
 #endif
-			for (i = NAND_UBOOT_START; i < NAND_UBOOT_END; i+= NAND_BLOCK_SIZE){
-				if (!nand_read_block(buf, i))
+			for(i = NAND_UBOOT_START; i < NAND_UBOOT_END; i += NAND_BLOCK_SIZE) {
+				if(!nand_read_block(buf, i))
 					buf += NAND_BLOCK_SIZE; /* advance buf ptr */
 			}
-		}
-
-		if (get_mem_type() == GPMC_ONENAND){
+		} else if(get_mem_type() == GPMC_ONENAND) {
 #ifdef CFG_PRINTF
 			printf("Booting from onenand . . .\n");
 #endif
-			for (i = ONENAND_START_BLOCK; i < ONENAND_END_BLOCK; i++){
-				if (!onenand_read_block(buf, i))
+			for(i = ONENAND_START_BLOCK; i < ONENAND_END_BLOCK; i++) {
+				if(!onenand_read_block(buf, i))
 					buf += ONENAND_BLOCK_SIZE;
 			}
 		}
