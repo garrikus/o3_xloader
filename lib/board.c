@@ -121,12 +121,10 @@ static int mmc_is_powered(void)
     if(i == 3) return -1;
 
     if(!((val1 & TWL4030_PM_RECEIVER_DEV_GRP_P1) &&
-            val2 == TWL4030_PM_RECEIVER_VMMC1_VSEL_30)) {
-//                                                    printf("No VMMC1 active.\n");
+            val2 == TWL4030_PM_RECEIVER_VMMC1_VSEL_30))
 						return 0;
-    } else
+    else
 						return 1;
-//                                                    printf("Active VMMC1 found.\n");
 }
 
 
@@ -165,9 +163,10 @@ static int chk_accum_voltage(void)
 				}
 
 				if(voltage < 300 || voltage > 5000) {
+#ifdef CFG_PRINTF
 					if(!j)
 						printf("\nWait a few seconds for battery voltage measurement...\n");
-
+#endif
 					if(j == 1) t = 150000;
 					else	   t = 2000;
 
@@ -176,12 +175,14 @@ static int chk_accum_voltage(void)
 				else
 					break;
 		}
-
+#ifdef CFG_PRINTF
 		printf("ACCUM BATTERY VOLTAGE: %d.%03d V\n", voltage/1000, voltage%1000);
-
+#endif
 		if(voltage <= 3200) {
 			if(voltage < 300) {
+#ifdef CFG_PRINTF
 				printf("Too low accumulator voltage!\nUnable to boot...\n");
+#endif
 				goto shutdown;
 			}
 
@@ -202,13 +203,17 @@ static int chk_accum_voltage(void)
 							goto shutdown;
 						}
 			} else {
+#ifdef CFG_PRINTF
 				printf("ERROR: i2c test charge controller is failed!\n");
+#endif
 				error = 1;
 				}
 			} else
 				error = 0;
 		} else {
+#ifdef CFG_PRINTF
 				printf("WARNING: fuel gauge is not found!\n");
+#endif
 				error = 0;
 		}
 
@@ -217,7 +222,9 @@ static int chk_accum_voltage(void)
         return error;
 
 shutdown:
+#ifdef CFG_PRINTF
 	printf("SHUTDOWN!");
+#endif
         shutdown();
 }
 #endif
