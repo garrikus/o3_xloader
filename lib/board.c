@@ -305,17 +305,15 @@ void start_armboot (void)
 
 	if(buf == (uchar *)CFG_LOADADDR) {
 		if(get_mem_type() == GPMC_NAND) {
-#ifdef CFG_PRINTF
 			printf("Booting from nand . . .\n");
-#endif
+			
 			for(i = NAND_UBOOT_START; i < NAND_UBOOT_END; i += NAND_BLOCK_SIZE) {
 				if(!nand_read_block(buf, i))
 					buf += NAND_BLOCK_SIZE; /* advance buf ptr */
 			}
 		} else if(get_mem_type() == GPMC_ONENAND) {
-#ifdef CFG_PRINTF
 			printf("Booting from onenand . . .\n");
-#endif
+
 			for(i = ONENAND_START_BLOCK; i < ONENAND_END_BLOCK; i++) {
 				if(!onenand_read_block(buf, i))
 					buf += ONENAND_BLOCK_SIZE;
