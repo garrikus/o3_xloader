@@ -45,11 +45,13 @@ extern u32 get_mem_type(void);
 
 static const char version_string[] =
 	"MLO-version-id: " X_LOADER_VERSION CFG_BTD_INDEX " (" __DATE__ " - " __TIME__ ")";
+int dont_print = 0;
 
 #ifdef CFG_PRINTF
 int print_info(void)
 {
 	printf("\n\n%s\n", version_string);
+	dont_print = 1;
 	return 0;
 }
 #endif
