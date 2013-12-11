@@ -286,6 +286,11 @@ static int vsprintf(char *buf, const char *fmt, va_list args)
 
 int serial_printf (const char *fmt, ...)
 {
+	extern int dont_print;
+
+	if (dont_print)
+		return 0;
+
 	va_list args;
 	uint i;
 	char printbuffer[CFG_PBSIZE];

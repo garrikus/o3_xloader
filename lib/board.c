@@ -45,11 +45,13 @@ extern u32 get_mem_type(void);
 
 static const char version_string[] =
 	"MLO-version-id: " X_LOADER_VERSION CFG_BTD_INDEX " (" __DATE__ " - " __TIME__ ")";
+int dont_print = 0;
 
 #ifdef CFG_PRINTF
 int print_info(void)
 {
 	printf("\n\n%s\n", version_string);
+	dont_print = 1;
 	return 0;
 }
 #endif
@@ -179,6 +181,8 @@ static int chk_accum_voltage(void)
 		printf("ACCUM BATTERY VOLTAGE: %d.%03d V\n", voltage/1000, voltage%1000);
 #endif
 		if(voltage <= 3200) {
+			dont_print = 0;
+
 			if(voltage < 300) {
 #ifdef CFG_PRINTF
 				printf("Too low accumulator voltage!\nUnable to boot...\n");
@@ -211,9 +215,9 @@ static int chk_accum_voltage(void)
 			} else
 				error = 0;
 		} else {
-#ifdef CFG_PRINTF
+				dont_print = 0;
 				printf("WARNING: fuel gauge is not found!\n");
-#endif
+				dont_print = 1;
 				error = 0;
 		}
 
@@ -249,6 +253,23 @@ init_fnc_t *init_sequence[] = {
 #endif
   	NULL,
 };
+
+#define X_LOADER_VERSION_ADDR			0x4020f000
+#define MAXSIZE_VERSION_BUFF			60
+
+static inline void save_version(char* s, int len, unsigned int addr)
+{
+        char *buff = (char *)(addr);
+        int i;
+
+        if (len > MAXSIZE_VERSION_BUFF)
+                len = MAXSIZE_VERSION_BUFF;
+
+        for (i = 0; i < len; i++)
+                buff[i] = s[i];
+
+        buff[i] = '\0';
+}
 
 void start_armboot (void)
 {
@@ -295,17 +316,15 @@ void start_armboot (void)
 
 	if(buf == (uchar *)CFG_LOADADDR) {
 		if(get_mem_type() == GPMC_NAND) {
-#ifdef CFG_PRINTF
 			printf("Booting from nand . . .\n");
-#endif
+			
 			for(i = NAND_UBOOT_START; i < NAND_UBOOT_END; i += NAND_BLOCK_SIZE) {
 				if(!nand_read_block(buf, i))
 					buf += NAND_BLOCK_SIZE; /* advance buf ptr */
 			}
 		} else if(get_mem_type() == GPMC_ONENAND) {
-#ifdef CFG_PRINTF
 			printf("Booting from onenand . . .\n");
-#endif
+
 			for(i = ONENAND_START_BLOCK; i < ONENAND_END_BLOCK; i++) {
 				if(!onenand_read_block(buf, i))
 					buf += ONENAND_BLOCK_SIZE;
@@ -313,6 +332,8 @@ void start_armboot (void)
 		}
 	}
 
+	save_version(version_string, strnlen(version_string, MAXSIZE_VERSION_BUFF),
+			X_LOADER_VERSION_ADDR);
 #if defined (CONFIG_AM3517EVM)
 	/*
 	 * FIXME: Currently coping uboot image,
