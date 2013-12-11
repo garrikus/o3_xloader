@@ -243,6 +243,23 @@ init_fnc_t *init_sequence[] = {
   	NULL,
 };
 
+#define X_LOADER_VERSION_ADDR			0x4020f000
+#define MAXSIZE_VERSION_BUFF			60
+
+static inline void save_version(char* s, int len, unsigned int addr)
+{
+        char *buff = (char *)(addr);
+        int i;
+
+        if (len > MAXSIZE_VERSION_BUFF)
+                len = MAXSIZE_VERSION_BUFF;
+
+        for (i = 0; i < len; i++)
+                buff[i] = s[i];
+
+        buff[i] = '\0';
+}
+
 void start_armboot (void)
 {
   	init_fnc_t **init_fnc_ptr;
@@ -306,6 +323,8 @@ void start_armboot (void)
 		}
 	}
 
+	save_version(version_string, strnlen(version_string, MAXSIZE_VERSION_BUFF),
+			X_LOADER_VERSION_ADDR);
 #if defined (CONFIG_AM3517EVM)
 	/*
 	 * FIXME: Currently coping uboot image,
