@@ -182,6 +182,8 @@ static int chk_accum_voltage(void)
 		printf("ACCUM BATTERY VOLTAGE: %d.%03d V\n", voltage/1000, voltage%1000);
 
 		if(voltage <= 3200) {
+			dont_print = 0;
+
 			if(voltage < 300) {
 				printf("Too low accumulator voltage!\nUnable to boot...\n");
 				goto shutdown;
@@ -210,7 +212,9 @@ static int chk_accum_voltage(void)
 			} else
 				error = 0;
 		} else {
+				dont_print = 0;
 				printf("WARNING: fuel gauge is not found!\n");
+				dont_print = 1;
 				error = 0;
 		}
 
